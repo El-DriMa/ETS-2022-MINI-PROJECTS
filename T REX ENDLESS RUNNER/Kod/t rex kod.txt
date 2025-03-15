@@ -1,0 +1,138 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace T_REX_ENDLESS_RUNNER
+{
+    public partial class Form1 : Form
+    {
+        bool jumping = false; //postavimo da je skok false
+        int jumpSpeed; //brzina skoka
+        int force = 12; //sila skoka 
+        int score = 0; //pocetna vrijednost scora
+        int highScore = 0;//pocetna vrijednost high scora
+        int obstacleSpeed = 10;//pocetna brzina objekata
+        Random rand = new Random();//pravi novu random klasu
+        int position;
+        bool isGameOver = false;//postavimo da je kraj igre false
+        public Form1()
+        {
+            InitializeComponent();
+            GameReset(); //pozivamo funkciju reset igre
+        }
+
+        private void pictureBox2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void MainGameTimerEvent(object sender, EventArgs e)
+        {
+            trex.Top += jumpSpeed; //povezivanje brzine skoka sa slikom igraca
+            txtscore.Text = "Score : " + score;//prikazemo koji je score
+            if (highScore < score) //postavka high scora
+            {
+                highScore = score; 
+                txths.Text = "High Score : " + highScore;//ispis high scora
+            }
+            if (jumping==true && force < 0) //ako je sila manja od 0,skakanje nije moguce
+            {
+                jumping = false;
+            }
+            if (jumping == true)//ako igrac skace,brzinu postavimo na negativnu vrijednost i silu smanjimo za 1
+            {
+                jumpSpeed = -12;
+                force -= 1;
+            }
+            else //ako ne skace,brzinu postavimo na pozitivnu vrijednost
+            {
+                jumpSpeed = 12;
+            }
+            if(trex.Top>279 && jumping == false) //omogucava da igrac ne propadne kroz nas pod kada ne skace
+            {
+                force = 12;
+                trex.Top = 280;
+                jumpSpeed = 0;
+            }
+            foreach(Control x in this.Controls)
+            {
+                //ako je x jednako slici i ima tag objekta
+                if(x is PictureBox && (string)x.Tag == "obstacle")
+                {
+                    x.Left -= obstacleSpeed; //pomjeri se objekat u lijevo
+                    if (x.Left < -100)//ako je objekat van ekrana
+                    {
+                        //respawnujemo ga u daljini
+                        x.Left = this.ClientSize.Width + rand.Next(200, 500) + (x.Width * 15);
+                        score++;//povecavamo score
+                    }
+                    if (trex.Bounds.IntersectsWith(x.Bounds))//ako se slika igraca sudari sa objektom
+                    {
+                        gameTimer.Stop();//igra se zaustavlja
+                        trex.Image = Properties.Resources.dead;//pojavi se slika umjesto gifa
+                        txtReset.Text +="Press R to restart the game ";//ispise se text za restart igre
+                        isGameOver = true; //kraj igre 
+                    }
+                }
+            }
+            if (score > 5) //ako je score veci od 5,brzina objekta se mijenja
+            {
+                obstacleSpeed = 15;
+            }
+        }
+
+        private void keyisdown(object sender, KeyEventArgs e)
+        {
+            //ako igrac ne skace
+            if(e.KeyCode==Keys.Space && jumping == false)
+            {
+                jumping = true;//kad klikne space skocit ce
+            }
+        }
+
+        private void keyisup(object sender, KeyEventArgs e)
+        {
+            //kada se tipka pusti gledamo da li je skakanje true
+            if (jumping == true)
+            {
+                jumping = false;//ako jeste,postavimo ga na false
+            }
+            //ako je R kliknuto igra se restartuje
+            if(e.KeyCode==Keys.R && isGameOver == true)
+            {
+                GameReset();
+            }
+        }
+        private void GameReset()//reset funkcija
+        {
+            force = 12; //sila je odredjena vrijednost
+            jumpSpeed = 0;//brzina skakanja je 0
+            jumping = false; //skakanje je iskljuceno
+            score = 0;//score se resetuje na 0
+            obstacleSpeed = 10;//brzina objekta je odredjena vrijendost
+            txtscore.Text = "Score : " + score; //ispise se score
+            trex.Image = Properties.Resources.running;//promijeni se slika igraca 
+            isGameOver = false;//kraj igre je false
+            trex.Top =280;//pozicija igraca
+            txtReset.Text = "";//text za restart igre je prazan
+
+            foreach (Control x in this.Controls)
+            {
+                //ako je x slika i ima tag za objekat
+                if(x is PictureBox && (string)x.Tag == "obstacle")
+                {
+                    //generise se nasumicni broj izmedju pozicija
+                    position = this.ClientSize.Width + rand.Next(10,100) + (x.Width * 10);//promjeni se pozicija na nasumicnu lokaciju
+                    x.Left = position; 
+                }
+            }
+            gameTimer.Start();//pokrene se tajmer
+        }
+    }
+}
